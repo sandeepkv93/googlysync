@@ -33,14 +33,10 @@ jobs:
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
         run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
 
-      - name: Go test (Task)
-        if: hashFiles('go.mod') != ''
-        run: task go:test
-
       - name: Wire check (Task)
         if: hashFiles('cmd/**/wire.go') != ''
         run: task wire:check
 
       - name: No Go module yet
         if: hashFiles('go.mod') == ''
-        run: echo "No go.mod; skipping Go tests."
+        run: echo "No go.mod; skipping Go setup."

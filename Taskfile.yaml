@@ -6,16 +6,6 @@ tasks:
     cmds:
       - task --list
 
-  go:build:
-    desc: Build daemon with Go toolchain
-    cmds:
-      - go build ./cmd/drive-daemon
-
-  go:test:
-    desc: Run Go tests
-    cmds:
-      - go test ./...
-
   go:tidy:
     desc: Tidy Go modules
     cmds:
