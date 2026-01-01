@@ -37,6 +37,10 @@ jobs:
         if: hashFiles('go.mod') != ''
         run: task go:test
 
+      - name: Wire check (Task)
+        if: hashFiles('cmd/**/wire.go') != ''
+        run: task wire:check
+
       - name: No Go module yet
         if: hashFiles('go.mod') == ''
         run: echo "No go.mod; skipping Go tests."
