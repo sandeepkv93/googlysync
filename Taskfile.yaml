@@ -62,6 +62,12 @@ tasks:
       - task bazel:build
       - bazel-bin/cmd/googlysync/googlysync_/googlysync status --once --socket /tmp/googlysync/daemon.sock
 
+  run:ping:
+    desc: Build and ping daemon using the built binary
+    cmds:
+      - task bazel:build
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync ping --socket /tmp/googlysync/daemon.sock
+
   run:tui:
     desc: Build and run the status TUI using the built binary
     cmds:

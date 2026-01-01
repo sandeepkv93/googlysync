@@ -36,6 +36,7 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 | goose | `task goose -- <cmd>` | Run Goose migrations via Bazel |
 | run:daemon | `task run:daemon` | Build and run daemon |
 | run:status | `task run:status` | Build and run status once |
+| run:ping | `task run:ping` | Build and ping daemon |
 | run:tui | `task run:tui` | Build and run status TUI |
 | clean | `task clean` | Clean Bazel outputs |
 
@@ -45,7 +46,7 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 - Start daemon: `task run:daemon`
 - Open status TUI: `task run:tui`
 - Status once: `task run:status`
-- Ping daemon: `bazel-bin/cmd/googlysync/googlysync_/googlysync ping --socket /tmp/googlysync/daemon.sock`
+- Ping daemon: `task run:ping`
 
 ## Logging
 
