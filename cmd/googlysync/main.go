@@ -120,7 +120,50 @@ func runPing(args []string) {
 }
 
 func runStatus(args []string) {
-	runTUI(args)
+	fs := flag.NewFlagSet("status", flag.ExitOnError)
+	socketPath := fs.String("socket", "", "unix socket path")
+	interval := fs.Duration("interval", 2*time.Second, "refresh interval")
+	once := fs.Bool("once", false, "print status once and exit")
+	_ = fs.Parse(args)
+
+	if *once {
+		printStatusOnce(*socketPath)
+		return
+	}
+
+	m := newModel(*socketPath, *interval)
+	if _, err := tea.NewProgram(m).Run(); err != nil {
+		fmt.Printf("ui error: %v\n", err)
+	}
+}
+
+func printStatusOnce(socketPath string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	cfg, err := config.NewConfigWithOptions(config.Options{SocketPath: socketPath})
+	if err != nil {
+		fmt.Printf("config error: %v\n", err)
+		return
+	}
+	conn, err := ipc.Dial(ctx, cfg.SocketPath)
+	if err != nil {
+		fmt.Printf("dial error: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	client := ipcgen.NewSyncStatusClient(conn)
+	resp, err := client.GetStatus(ctx, &ipcgen.Empty{})
+	if err != nil {
+		fmt.Printf("status error: %v\n", err)
+		return
+	}
+	if resp == nil || resp.Status == nil {
+		fmt.Println("UNKNOWN: no status")
+		return
+	}
+	fmt.Printf("%s: %s\n", resp.Status.State.String(), resp.Status.Message)
 }
 
 func runTUI(args []string) {

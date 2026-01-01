@@ -15,11 +15,15 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
-	"github.com/sandeepkv93/googlysync/internal/ipc/gen"
+	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
 )
 
 // Server wraps the gRPC server for daemon IPC.
 type Server struct {
+	ipcgen.UnimplementedDaemonControlServer
+	ipcgen.UnimplementedSyncStatusServer
+	ipcgen.UnimplementedAuthServiceServer
+
 	cfg    *config.Config
 	logger *zap.Logger
 	ver    string
@@ -28,7 +32,7 @@ type Server struct {
 	listener   net.Listener
 
 	statusMu sync.Mutex
-	status   *gen.Status
+	status   *ipcgen.Status
 }
 
 // NewServer constructs a gRPC IPC server.
@@ -37,8 +41,8 @@ func NewServer(cfg *config.Config, logger *zap.Logger) (*Server, error) {
 		cfg:    cfg,
 		logger: logger,
 		ver:    "dev",
-		status: &gen.Status{
-			State:     gen.Status_IDLE,
+		status: &ipcgen.Status{
+			State:     ipcgen.Status_IDLE,
 			Message:   "idle",
 			UpdatedAt: timestamppb.New(time.Now()),
 		},
@@ -70,9 +74,9 @@ func (s *Server) Start(ctx context.Context) error {
 	s.listener = ln
 
 	s.grpcServer = grpc.NewServer()
-	gen.RegisterDaemonControlServer(s.grpcServer, s)
-	gen.RegisterSyncStatusServer(s.grpcServer, s)
-	gen.RegisterAuthServiceServer(s.grpcServer, s)
+	ipcgen.RegisterDaemonControlServer(s.grpcServer, s)
+	ipcgen.RegisterSyncStatusServer(s.grpcServer, s)
+	ipcgen.RegisterAuthServiceServer(s.grpcServer, s)
 
 	errCh := make(chan error, 1)
 	go func() {
@@ -101,32 +105,32 @@ func (s *Server) Stop() {
 }
 
 // Ping returns daemon version.
-func (s *Server) Ping(ctx context.Context, _ *gen.Empty) (*gen.PingResponse, error) {
+func (s *Server) Ping(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.PingResponse, error) {
 	_ = ctx
-	return &gen.PingResponse{Version: s.ver}, nil
+	return &ipcgen.PingResponse{Version: s.ver}, nil
 }
 
 // Shutdown is a placeholder for future graceful shutdown.
-func (s *Server) Shutdown(ctx context.Context, _ *gen.ShutdownRequest) (*gen.ShutdownResponse, error) {
+func (s *Server) Shutdown(ctx context.Context, _ *ipcgen.ShutdownRequest) (*ipcgen.ShutdownResponse, error) {
 	_ = ctx
-	return &gen.ShutdownResponse{RequestId: "req-0"}, nil
+	return &ipcgen.ShutdownResponse{RequestId: "req-0"}, nil
 }
 
 // GetStatus returns a basic status snapshot.
-func (s *Server) GetStatus(ctx context.Context, _ *gen.Empty) (*gen.StatusResponse, error) {
+func (s *Server) GetStatus(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.StatusResponse, error) {
 	_ = ctx
 	status := s.snapshotStatus()
-	return &gen.StatusResponse{Status: status, RequestId: "req-0"}, nil
+	return &ipcgen.StatusResponse{Status: status, RequestId: "req-0"}, nil
 }
 
 // WatchStatus streams periodic status updates until the client disconnects.
-func (s *Server) WatchStatus(_ *gen.Empty, stream gen.SyncStatus_WatchStatusServer) error {
+func (s *Server) WatchStatus(_ *ipcgen.Empty, stream ipcgen.SyncStatus_WatchStatusServer) error {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		status := s.snapshotStatus()
-		if err := stream.Send(&gen.StatusResponse{Status: status, RequestId: "req-0"}); err != nil {
+		if err := stream.Send(&ipcgen.StatusResponse{Status: status, RequestId: "req-0"}); err != nil {
 			return err
 		}
 		select {
@@ -138,16 +142,16 @@ func (s *Server) WatchStatus(_ *gen.Empty, stream gen.SyncStatus_WatchStatusServ
 }
 
 // GetAuthState returns a stub auth state.
-func (s *Server) GetAuthState(ctx context.Context, _ *gen.Empty) (*gen.AuthStateResponse, error) {
+func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.AuthStateResponse, error) {
 	_ = ctx
-	return &gen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+	return &ipcgen.AuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
 }
 
-func (s *Server) snapshotStatus() *gen.Status {
+func (s *Server) snapshotStatus() *ipcgen.Status {
 	s.statusMu.Lock()
 	defer s.statusMu.Unlock()
 
-	return &gen.Status{
+	return &ipcgen.Status{
 		State:     s.status.State,
 		Message:   s.status.Message,
 		UpdatedAt: timestamppb.New(time.Now()),

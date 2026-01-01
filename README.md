@@ -39,9 +39,10 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 ## Run (dev)
 
 - Build: `task bazel:build`
-- Start daemon: `bazelisk run //cmd/googlysync:googlysync -- daemon --config configs/dev.json`
+- Start daemon: `bazelisk run //cmd/googlysync:googlysync -- daemon --config $(pwd)/configs/dev.json`
 - Open status TUI: `bazelisk run //cmd/googlysync:googlysync --`
-- Ping daemon: `bazelisk run //cmd/googlysync:googlysync -- ping --socket ./var/daemon.sock`
+- Status once: `bazelisk run //cmd/googlysync:googlysync -- status --once --socket /tmp/googlysync/daemon.sock`
+- Ping daemon: `bazelisk run //cmd/googlysync:googlysync -- ping --socket /tmp/googlysync/daemon.sock`
 
 ## Logging
 
