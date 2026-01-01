@@ -6,20 +6,20 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 
 ```
 .
-|-- assets/           Icons/branding
-|-- cmd/              Entry points (drive-daemon, drive-ui, drive-fuse)
-|-- configs/          Config templates
-|-- docs/             Additional docs
-|-- internal/         Core app packages (auth, config, storage, sync, ipc, etc.)
-|-- packaging/        Packaging assets
-|   |-- deb/          .deb packaging files
-|   `-- systemd/      systemd user units
-|-- pkg/              Public/shared packages (if any)
-|-- proto/            gRPC definitions
-|-- scripts/          Tooling helpers
-|-- third_party/      External assets or vendored code
-|-- tools/            Dev/build tools
-`-- ui/               GTK UI resources/layouts
+|-- assets
+|-- cmd
+|-- configs
+|-- docs
+|-- internal
+|-- packaging
+|   |-- deb
+|   `-- systemd
+|-- pkg
+|-- proto
+|-- scripts
+|-- third_party
+|-- tools
+`-- ui
 ```
 
 ## Tasks
