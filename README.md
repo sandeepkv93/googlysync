@@ -3,6 +3,7 @@
 [![CI](https://github.com/sandeepkv93/googlysync/workflows/CI/badge.svg)](https://github.com/sandeepkv93/googlysync/actions)
 [![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Work in Progress](https://img.shields.io/badge/status-work%20in%20progress-yellow)
 
 <img src="assets/googlysync-icon.png" alt="googlysync icon" width="200">
 
