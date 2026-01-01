@@ -141,6 +141,9 @@ func (w *Watcher) handleEvent(evt fsnotify.Event) {
 	}
 
 	w.mu.Lock()
+	if existing, ok := w.pending[path]; ok {
+		op = mergeOp(existing.Op, op)
+	}
 	w.pending[path] = Event{Path: path, Op: op, When: time.Now().Add(w.debounce)}
 	w.mu.Unlock()
 }
