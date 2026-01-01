@@ -47,8 +47,26 @@ tasks:
     desc: Run Goose migrations via Bazel
     cmds:
       - |
-        db=${DB_PATH:-./var/googlysync.db}
+        db=${DB_PATH:-/tmp/googlysync/googlysync.db}
         bazelisk run @com_github_pressly_goose_v3//cmd/goose:goose -- -dir internal/storage/migrations -table goose_db_version sqlite3 "$db" {{.CLI_ARGS}}
+
+  run:daemon:
+    desc: Build and run daemon using the built binary
+    cmds:
+      - task bazel:build
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync daemon --config $(pwd)/configs/dev.json
+
+  run:status:
+    desc: Build and run status (once) using the built binary
+    cmds:
+      - task bazel:build
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync status --once --socket /tmp/googlysync/daemon.sock
+
+  run:tui:
+    desc: Build and run the status TUI using the built binary
+    cmds:
+      - task bazel:build
+      - bazel-bin/cmd/googlysync/googlysync_/googlysync
 
   clean:
     desc: Clean Bazel outputs
