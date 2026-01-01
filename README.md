@@ -1,6 +1,8 @@
 # googlysync
 
-Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE streaming, built with Bazel.
+<img src="assets/googlysync-icon.png" alt="googlysync icon" width="200">
+
+Pop!\_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE streaming, built with Bazel.
 
 ## Structure
 
@@ -24,17 +26,17 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 
 ## Tasks
 
-| Task | Command | Description |
-| --- | --- | --- |
-| list | `task --list` | List available tasks |
-| bazel:build | `task bazel:build` | Build all Bazel targets |
-| bazel:test | `task bazel:test` | Run Bazel tests |
-| gazelle | `task gazelle` | Update Bazel BUILD files |
-| wire | `task wire` | Generate Wire DI files |
-| wire:check | `task wire:check` | Verify Wire outputs are up to date |
-| buf:gen | `task buf:gen` | Generate gRPC code via Buf |
-| goose | `task goose -- <cmd>` | Run Goose migrations via Bazel |
-| clean | `task clean` | Clean Bazel outputs |
+| Task        | Command               | Description                        |
+| ----------- | --------------------- | ---------------------------------- |
+| list        | `task --list`         | List available tasks               |
+| bazel:build | `task bazel:build`    | Build all Bazel targets            |
+| bazel:test  | `task bazel:test`     | Run Bazel tests                    |
+| gazelle     | `task gazelle`        | Update Bazel BUILD files           |
+| wire        | `task wire`           | Generate Wire DI files             |
+| wire:check  | `task wire:check`     | Verify Wire outputs are up to date |
+| buf:gen     | `task buf:gen`        | Generate gRPC code via Buf         |
+| goose       | `task goose -- <cmd>` | Run Goose migrations via Bazel     |
+| clean       | `task clean`          | Clean Bazel outputs                |
 
 ## Run (dev)
 
@@ -47,6 +49,7 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 ## Logging
 
 Config file fields (JSON):
+
 - `log_level`
 - `log_file_path`
 - `log_file_max_mb`
@@ -54,6 +57,7 @@ Config file fields (JSON):
 - `log_file_max_age_days`
 
 Env overrides:
+
 - `GOOGLYSYNC_LOG_LEVEL`
 - `GOOGLYSYNC_LOG_FILE`
 - `GOOGLYSYNC_LOG_MAX_MB`
