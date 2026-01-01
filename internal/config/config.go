@@ -17,6 +17,8 @@ type Config struct {
 	DataDir           string
 	RuntimeDir        string
 	SocketPath        string
+	SyncRoot          string
+	IgnorePatterns    []string
 	LogLevel          string
 	DatabasePath      string
 	ConfigFile        string
@@ -69,6 +71,8 @@ func NewConfig() (*Config, error) {
 		DataDir:           dataDir,
 		RuntimeDir:        runtimeDir,
 		SocketPath:        socketPath,
+		SyncRoot:          filepath.Join(dataDir, "sync"),
+		IgnorePatterns:    []string{"*.swp", "*.tmp", "*~", ".DS_Store"},
 		LogLevel:          "info",
 		DatabasePath:      filepath.Join(dataDir, "googlysync.db"),
 		LogFilePath:       filepath.Join(dataDir, "logs", "daemon.jsonl"),
@@ -86,17 +90,19 @@ type Options struct {
 }
 
 type fileConfig struct {
-	AppName           string `json:"app_name"`
-	ConfigDir         string `json:"config_dir"`
-	DataDir           string `json:"data_dir"`
-	RuntimeDir        string `json:"runtime_dir"`
-	SocketPath        string `json:"socket_path"`
-	LogLevel          string `json:"log_level"`
-	DatabasePath      string `json:"database_path"`
-	LogFilePath       string `json:"log_file_path"`
-	LogFileMaxMB      int    `json:"log_file_max_mb"`
-	LogFileMaxBackups int    `json:"log_file_max_backups"`
-	LogFileMaxAgeDays int    `json:"log_file_max_age_days"`
+	AppName           string   `json:"app_name"`
+	ConfigDir         string   `json:"config_dir"`
+	DataDir           string   `json:"data_dir"`
+	RuntimeDir        string   `json:"runtime_dir"`
+	SocketPath        string   `json:"socket_path"`
+	SyncRoot          string   `json:"sync_root"`
+	IgnorePatterns    []string `json:"ignore_patterns"`
+	LogLevel          string   `json:"log_level"`
+	DatabasePath      string   `json:"database_path"`
+	LogFilePath       string   `json:"log_file_path"`
+	LogFileMaxMB      int      `json:"log_file_max_mb"`
+	LogFileMaxBackups int      `json:"log_file_max_backups"`
+	LogFileMaxAgeDays int      `json:"log_file_max_age_days"`
 }
 
 // NewConfigWithOptions resolves config and applies overrides from options and environment.
@@ -151,6 +157,12 @@ func applyConfigFile(cfg *Config, path string) error {
 	if fc.SocketPath != "" {
 		cfg.SocketPath = fc.SocketPath
 	}
+	if fc.SyncRoot != "" {
+		cfg.SyncRoot = fc.SyncRoot
+	}
+	if len(fc.IgnorePatterns) > 0 {
+		cfg.IgnorePatterns = fc.IgnorePatterns
+	}
 	if fc.LogLevel != "" {
 		cfg.LogLevel = fc.LogLevel
 	}
@@ -198,4 +210,24 @@ func applyEnv(cfg *Config) {
 	if v := os.Getenv("GOOGLYSYNC_SOCKET_PATH"); v != "" {
 		cfg.SocketPath = v
 	}
+	if v := os.Getenv("GOOGLYSYNC_SYNC_ROOT"); v != "" {
+		cfg.SyncRoot = v
+	}
+	if v := os.Getenv("GOOGLYSYNC_IGNORE_PATTERNS"); v != "" {
+		cfg.IgnorePatterns = splitList(v)
+	}
+}
+
+func splitList(val string) []string {
+	var out []string
+	start := 0
+	for i := 0; i <= len(val); i++ {
+		if i == len(val) || val[i] == ',' {
+			if i > start {
+				out = append(out, val[start:i])
+			}
+			start = i + 1
+		}
+	}
+	return out
 }

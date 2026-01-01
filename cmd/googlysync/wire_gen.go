@@ -42,7 +42,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	watcher, err := fswatch.NewWatcher(logger)
+	watcher, err := fswatch.NewWatcher(logger, configConfig, store)
 	if err != nil {
 		return nil, err
 	}

@@ -55,6 +55,12 @@ func (d *Daemon) Run(ctx context.Context) error {
 		go d.Sync.Run(syncCtx)
 	}
 
+	if d.Watcher != nil {
+		if err := d.Watcher.Start(syncCtx); err != nil {
+			d.Logger.Warn("fswatch start failed", zap.Error(err))
+		}
+	}
+
 	errCh := make(chan error, 1)
 	go func() {
 		if d.IPC == nil {
@@ -83,6 +89,9 @@ func (d *Daemon) Run(ctx context.Context) error {
 
 // Close releases resources owned by the daemon.
 func (d *Daemon) Close() error {
+	if d.Watcher != nil {
+		_ = d.Watcher.Close()
+	}
 	if d.Storage != nil {
 		return d.Storage.Close()
 	}
