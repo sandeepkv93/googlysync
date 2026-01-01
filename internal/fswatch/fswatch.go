@@ -78,6 +78,9 @@ func (w *Watcher) Start(ctx context.Context) error {
 		return nil
 	}
 
+	if err := os.MkdirAll(w.cfg.SyncRoot, 0o700); err != nil {
+		return err
+	}
 	if err := w.addRecursive(w.cfg.SyncRoot); err != nil {
 		return err
 	}
