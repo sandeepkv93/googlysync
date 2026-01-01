@@ -11,27 +11,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Bazelisk
-        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
-        uses: bazelbuild/setup-bazelisk@v3
-
-      - name: Bazel build
-        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
-        run: bazelisk build //...
-
-      - name: No Bazel targets yet
-        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
-        run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
-
       - name: Set up Go
         if: hashFiles('go.mod') != ''
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Go test
+      - name: Install Task
         if: hashFiles('go.mod') != ''
-        run: go test ./...
+        run: go install github.com/go-task/task/v3/cmd/task@latest
+
+      - name: Set up Bazelisk
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        uses: bazelbuild/setup-bazelisk@v3
+
+      - name: Bazel build (Task)
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        run: task bazel:build
+
+      - name: No Bazel targets yet
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
+        run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
+
+      - name: Go test (Task)
+        if: hashFiles('go.mod') != ''
+        run: task go:test
 
       - name: No Go module yet
         if: hashFiles('go.mod') == ''
