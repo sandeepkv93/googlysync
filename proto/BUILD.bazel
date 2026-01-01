@@ -9,5 +9,6 @@ proto_library(
         "status.proto",
     ],
     deps = ["@protobuf//:timestamp_proto"],
+    strip_import_prefix = "/proto",
     visibility = ["//:__subpackages__"],
 )

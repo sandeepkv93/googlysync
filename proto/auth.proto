@@ -4,7 +4,7 @@ package googlysync.ipc.v1;
 
 option go_package = "github.com/sandeepkv93/googlysync/internal/ipc/gen;ipc";
 
-import "proto/common.proto";
+import "common.proto";
 
 service AuthService {
   rpc GetAuthState(Empty) returns (AuthStateResponse);

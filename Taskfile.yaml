@@ -30,6 +30,7 @@ tasks:
   wire:
     desc: Generate Wire DI files
     cmds:
+      - task buf:gen
       - go generate -tags=wireinject ./cmd/googlysync
 
   wire:check:
