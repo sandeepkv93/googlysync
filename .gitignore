@@ -1,0 +1,40 @@
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+coverage/
+
+# Bazel
+bazel-*
+
+# Protobuf/gRPC generated
+*.pb.go
+*.pb.gw.go
+*.pb.validate.go
+
+# SQLite/runtime data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Build output
+bin/
+dist/
+out/
+build/
+
+# IDE/editor
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
