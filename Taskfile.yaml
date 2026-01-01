@@ -38,6 +38,13 @@ tasks:
       - task wire
       - git diff --exit-code
 
+  goose:
+    desc: Run Goose migrations via Bazel
+    cmds:
+      - |
+        db=${DB_PATH:-./var/drive.db}
+        bazelisk run @com_github_pressly_goose_v3//cmd/goose:goose -- -dir internal/storage/migrations -table goose_db_version sqlite3 "$db" {{.CLI_ARGS}}
+
   clean:
     desc: Clean Bazel outputs
     cmds:

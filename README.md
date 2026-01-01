@@ -32,6 +32,7 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 | gazelle | `task gazelle` | Update Bazel BUILD files |
 | wire | `task wire` | Generate Wire DI files |
 | wire:check | `task wire:check` | Verify Wire outputs are up to date |
+| goose | `task goose -- <cmd>` | Run Goose migrations via Bazel |
 | clean | `task clean` | Clean Bazel outputs |
 
 ## Run (dev)
