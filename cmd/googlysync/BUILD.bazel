@@ -11,6 +11,7 @@ go_library(
     name = "googlysync_lib",
     srcs = [
         "main.go",
+        "providers.go",
         "tui.go",
         "wire_gen.go",
     ],
@@ -28,5 +29,6 @@ go_library(
         "//internal/storage",
         "//internal/sync",
         "@com_github_charmbracelet_bubbletea//:bubbletea",
+        "@org_uber_go_zap//:zap",
     ],
 )

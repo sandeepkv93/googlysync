@@ -8,6 +8,12 @@ import "google/protobuf/timestamp.proto";
 
 message Empty {}
 
+message StatusEvent {
+  string op = 1;
+  string path = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+}
+
 message Status {
   enum SyncState {
     SYNC_STATE_UNSPECIFIED = 0;
@@ -20,4 +26,5 @@ message Status {
   SyncState state = 1;
   string message = 2;
   google.protobuf.Timestamp updated_at = 3;
+  repeated StatusEvent recent_events = 4;
 }

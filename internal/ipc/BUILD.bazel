@@ -4,7 +4,9 @@ go_library(
     name = "ipc",
     srcs = [
         "client.go",
+        "events.go",
         "server.go",
+        "time.go",
     ],
     importpath = "github.com/sandeepkv93/googlysync/internal/ipc",
     visibility = ["//:__subpackages__"],

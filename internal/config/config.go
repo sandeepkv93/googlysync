@@ -12,20 +12,22 @@ const appDirName = "drive-client"
 
 // Config holds basic runtime configuration.
 type Config struct {
-	AppName           string
-	ConfigDir         string
-	DataDir           string
-	RuntimeDir        string
-	SocketPath        string
-	SyncRoot          string
-	IgnorePatterns    []string
-	LogLevel          string
-	DatabasePath      string
-	ConfigFile        string
-	LogFilePath       string
-	LogFileMaxMB      int
-	LogFileMaxBackups int
-	LogFileMaxAgeDays int
+	AppName            string
+	ConfigDir          string
+	DataDir            string
+	RuntimeDir         string
+	SocketPath         string
+	SyncRoot           string
+	IgnorePatterns     []string
+	EventLogSize       int
+	SyncQueueSize      int
+	LogLevel           string
+	DatabasePath       string
+	ConfigFile         string
+	LogFilePath        string
+	LogFileMaxMB       int
+	LogFileMaxBackups  int
+	LogFileMaxAgeDays  int
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -73,6 +75,8 @@ func NewConfig() (*Config, error) {
 		SocketPath:        socketPath,
 		SyncRoot:          filepath.Join(dataDir, "sync"),
 		IgnorePatterns:    []string{"*.swp", "*.tmp", "*~", ".DS_Store"},
+		EventLogSize:      20,
+		SyncQueueSize:     1024,
 		LogLevel:          "info",
 		DatabasePath:      filepath.Join(dataDir, "googlysync.db"),
 		LogFilePath:       filepath.Join(dataDir, "logs", "daemon.jsonl"),
@@ -97,6 +101,8 @@ type fileConfig struct {
 	SocketPath        string   `json:"socket_path"`
 	SyncRoot          string   `json:"sync_root"`
 	IgnorePatterns    []string `json:"ignore_patterns"`
+	EventLogSize      int      `json:"event_log_size"`
+	SyncQueueSize     int      `json:"sync_queue_size"`
 	LogLevel          string   `json:"log_level"`
 	DatabasePath      string   `json:"database_path"`
 	LogFilePath       string   `json:"log_file_path"`
@@ -163,6 +169,12 @@ func applyConfigFile(cfg *Config, path string) error {
 	if len(fc.IgnorePatterns) > 0 {
 		cfg.IgnorePatterns = fc.IgnorePatterns
 	}
+	if fc.EventLogSize > 0 {
+		cfg.EventLogSize = fc.EventLogSize
+	}
+	if fc.SyncQueueSize > 0 {
+		cfg.SyncQueueSize = fc.SyncQueueSize
+	}
 	if fc.LogLevel != "" {
 		cfg.LogLevel = fc.LogLevel
 	}
@@ -215,6 +227,16 @@ func applyEnv(cfg *Config) {
 	}
 	if v := os.Getenv("GOOGLYSYNC_IGNORE_PATTERNS"); v != "" {
 		cfg.IgnorePatterns = splitList(v)
+	}
+	if v := os.Getenv("GOOGLYSYNC_EVENT_LOG_SIZE"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			cfg.EventLogSize = i
+		}
+	}
+	if v := os.Getenv("GOOGLYSYNC_SYNC_QUEUE_SIZE"); v != "" {
+		if i, err := strconv.Atoi(v); err == nil && i > 0 {
+			cfg.SyncQueueSize = i
+		}
 	}
 }
 

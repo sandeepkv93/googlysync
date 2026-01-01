@@ -9,8 +9,8 @@ import (
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
 	"github.com/sandeepkv93/googlysync/internal/ipc"
-	"github.com/sandeepkv93/googlysync/internal/storage"
 	syncer "github.com/sandeepkv93/googlysync/internal/sync"
+	"github.com/sandeepkv93/googlysync/internal/storage"
 )
 
 // Daemon wires together core services.
@@ -22,6 +22,7 @@ type Daemon struct {
 	Sync    *syncer.Engine
 	Watcher *fswatch.Watcher
 	IPC     *ipc.Server
+	Queue   *syncer.Queue
 }
 
 // NewDaemon constructs a daemon.
@@ -33,6 +34,7 @@ func NewDaemon(
 	syncEngine *syncer.Engine,
 	watcher *fswatch.Watcher,
 	ipcServer *ipc.Server,
+	queue *syncer.Queue,
 ) (*Daemon, error) {
 	logger.Info("daemon initialized")
 	return &Daemon{
@@ -43,6 +45,7 @@ func NewDaemon(
 		Sync:    syncEngine,
 		Watcher: watcher,
 		IPC:     ipcServer,
+		Queue:   queue,
 	}, nil
 }
 
@@ -59,6 +62,14 @@ func (d *Daemon) Run(ctx context.Context) error {
 		if err := d.Watcher.Start(syncCtx); err != nil {
 			d.Logger.Warn("fswatch start failed", zap.Error(err))
 		}
+	}
+
+	if d.Watcher != nil && d.Queue != nil {
+		go func() {
+			for evt := range d.Watcher.Events() {
+				d.Queue.Enqueue(evt)
+			}
+		}()
 	}
 
 	errCh := make(chan error, 1)

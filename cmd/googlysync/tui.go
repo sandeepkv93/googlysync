@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,10 +13,19 @@ import (
 	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
 )
 
+const maxEventLines = 10
+
 type statusMsg struct {
 	state   string
 	message string
 	at      time.Time
+	events  []eventMsg
+}
+
+type eventMsg struct {
+	op   string
+	path string
+	at   time.Time
 }
 
 type errMsg struct {
@@ -28,12 +38,14 @@ type model struct {
 	status     statusMsg
 	err        error
 	quitting   bool
+	showEvents bool
 }
 
 func newModel(socketPath string, interval time.Duration) model {
 	return model{
 		socketPath: socketPath,
 		interval:   interval,
+		showEvents: true,
 	}
 }
 
@@ -61,6 +73,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "r":
 			return m, pollStatusCmd(m.socketPath, 0)
+		case "e":
+			m.showEvents = !m.showEvents
 		}
 	}
 	return m, nil
@@ -76,7 +90,30 @@ func (m model) View() string {
 	if m.status.at.IsZero() {
 		return "googlysync status\n\nloading...\n\nq to quit\n"
 	}
-	return fmt.Sprintf("googlysync status\n\n%s: %s\nupdated: %s\n\nq to quit, r to refresh\n", m.status.state, m.status.message, m.status.at.Format(time.RFC3339))
+
+	var b strings.Builder
+	b.WriteString("googlysync status\n\n")
+	b.WriteString(fmt.Sprintf("%s: %s\n", m.status.state, m.status.message))
+	b.WriteString(fmt.Sprintf("updated: %s\n", m.status.at.Format(time.RFC3339)))
+
+	if m.showEvents {
+		b.WriteString("\nrecent events:\n")
+		if len(m.status.events) == 0 {
+			b.WriteString("- (none)\n")
+		} else {
+			for i, evt := range m.status.events {
+				if i >= maxEventLines {
+					break
+				}
+				b.WriteString(formatEventLine(evt))
+			}
+		}
+		b.WriteString("\nq to quit, r to refresh, e to toggle events\n")
+		return b.String()
+	}
+
+	b.WriteString("\nq to quit, r to refresh, e to toggle events\n")
+	return b.String()
 }
 
 type pollNowMsg struct{}
@@ -104,10 +141,42 @@ func pollStatusCmd(socketPath string, interval time.Duration) tea.Cmd {
 		if resp == nil || resp.Status == nil {
 			return errMsg{err: fmt.Errorf("no status returned")}
 		}
-		return statusMsg{
+
+		msg := statusMsg{
 			state:   resp.Status.State.String(),
 			message: resp.Status.Message,
 			at:      time.Now(),
 		}
+		if resp.Status.UpdatedAt != nil {
+			msg.at = resp.Status.UpdatedAt.AsTime()
+		}
+		msg.events = toEventMsgs(resp.Status.RecentEvents)
+		return msg
 	}
+}
+
+func toEventMsgs(events []*ipcgen.StatusEvent) []eventMsg {
+	out := make([]eventMsg, 0, len(events))
+	for _, evt := range events {
+		if evt == nil {
+			continue
+		}
+		item := eventMsg{
+			op:   evt.Op,
+			path: evt.Path,
+		}
+		if evt.OccurredAt != nil {
+			item.at = evt.OccurredAt.AsTime()
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+func formatEventLine(evt eventMsg) string {
+	when := "-"
+	if !evt.at.IsZero() {
+		when = evt.at.Format("15:04:05")
+	}
+	return fmt.Sprintf("- %s %s (%s)\n", evt.op, evt.path, when)
 }

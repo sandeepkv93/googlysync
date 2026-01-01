@@ -2,10 +2,14 @@ load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "sync",
-    srcs = ["sync.go"],
+    srcs = [
+        "queue.go",
+        "sync.go",
+    ],
     importpath = "github.com/sandeepkv93/googlysync/internal/sync",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/fswatch",
         "//internal/status",
         "//internal/storage",
         "@org_uber_go_zap//:zap",

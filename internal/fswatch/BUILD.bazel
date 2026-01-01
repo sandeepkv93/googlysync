@@ -2,7 +2,10 @@ load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "fswatch",
-    srcs = ["fswatch.go"],
+    srcs = [
+        "events.go",
+        "fswatch.go",
+    ],
     importpath = "github.com/sandeepkv93/googlysync/internal/fswatch",
     visibility = ["//:__subpackages__"],
     deps = [

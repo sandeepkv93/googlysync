@@ -3,7 +3,6 @@ package ipc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	grpcstatus "google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/sandeepkv93/googlysync/internal/config"
 	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
@@ -143,14 +141,11 @@ func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.Empty) (*ipcgen.Aut
 }
 
 func toProtoStatus(snapshot status.Snapshot) *ipcgen.Status {
-	msg := snapshot.Message
-	if snapshot.LastEvent != "" {
-		msg = fmt.Sprintf("%s | last: %s", msg, snapshot.LastEvent)
-	}
 	return &ipcgen.Status{
-		State:     mapState(snapshot.State),
-		Message:   msg,
-		UpdatedAt: timestamppb.New(snapshot.UpdatedAt),
+		State:        mapState(snapshot.State),
+		Message:      snapshot.Message,
+		UpdatedAt:    toProtoTimestamp(snapshot.UpdatedAt),
+		RecentEvents: toProtoEvents(snapshot.RecentEvents),
 	}
 }
 

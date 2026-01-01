@@ -7,5 +7,7 @@
   "database_path": "/tmp/googlysync/googlysync.db",
   "socket_path": "/tmp/googlysync/daemon.sock",
   "sync_root": "/tmp/googlysync/sync",
-  "ignore_patterns": ["*.swp", "*.tmp", "*~", ".DS_Store"]
+  "ignore_patterns": ["*.swp", "*.tmp", "*~", ".DS_Store"],
+  "event_log_size": 20,
+  "sync_queue_size": 1024
 }
