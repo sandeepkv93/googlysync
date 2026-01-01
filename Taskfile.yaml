@@ -6,11 +6,6 @@ tasks:
     cmds:
       - task --list
 
-  go:tidy:
-    desc: Tidy Go modules
-    cmds:
-      - go mod tidy
-
   bazel:build:
     desc: Build all Bazel targets
     cmds:
