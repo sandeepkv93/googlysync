@@ -1,0 +1,7 @@
+{
+  "log_level": "info",
+  "log_file_path": "./var/logs/daemon.jsonl",
+  "log_file_max_mb": 5,
+  "log_file_max_backups": 3,
+  "log_file_max_age_days": 3
+}

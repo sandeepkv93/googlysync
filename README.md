@@ -13,13 +13,13 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 |-- internal          - core app packages (auth, config, storage, sync, ipc, etc.)
 |-- packaging         - packaging assets
 |   |-- deb           - .deb packaging files
-|   |-- systemd       - systemd user units
+|   `-- systemd       - systemd user units
 |-- pkg               - public/shared packages (if any)
 |-- proto             - gRPC definitions
 |-- scripts           - tooling helpers
 |-- third_party       - external assets or vendored code
 |-- tools             - dev/build tools
-|-- ui                - GTK UI resources/layouts
+`-- ui                - GTK UI resources/layouts
 ```
 
 ## Tasks
@@ -30,4 +30,27 @@ Pop!_OS 24 desktop client for Google Drive: Go sync daemon + GTK4 UI + FUSE stre
 | bazel:build | `task bazel:build` | Build all Bazel targets |
 | bazel:test | `task bazel:test` | Run Bazel tests |
 | gazelle | `task gazelle` | Update Bazel BUILD files |
+| wire | `task wire` | Generate Wire DI files |
+| wire:check | `task wire:check` | Verify Wire outputs are up to date |
 | clean | `task clean` | Clean Bazel outputs |
+
+## Run (dev)
+
+- Build daemon: `task bazel:build`
+- Run daemon: `bazelisk run //cmd/drive-daemon:drive-daemon -- --config configs/dev.json`
+
+## Logging
+
+Config file fields (JSON):
+- `log_level`
+- `log_file_path`
+- `log_file_max_mb`
+- `log_file_max_backups`
+- `log_file_max_age_days`
+
+Env overrides:
+- `GOOGLYSYNC_LOG_LEVEL`
+- `GOOGLYSYNC_LOG_FILE`
+- `GOOGLYSYNC_LOG_MAX_MB`
+- `GOOGLYSYNC_LOG_MAX_BACKUPS`
+- `GOOGLYSYNC_LOG_MAX_AGE_DAYS`
