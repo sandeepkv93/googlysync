@@ -1,15 +1,31 @@
-load("@rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "storage",
-    srcs = ["storage.go"],
-    embedsrcs = ["migrations/00001_init.sql"],
+    srcs = [
+        "storage.go",
+        "store.go",
+    ],
+    embedsrcs = [
+        "migrations/00001_init.sql",
+        "migrations/00002_sync_state.sql",
+    ],
     importpath = "github.com/sandeepkv93/googlysync/internal/storage",
     visibility = ["//:__subpackages__"],
     deps = [
         "//internal/config",
         "@com_github_pressly_goose_v3//:goose",
         "@org_modernc_sqlite//:sqlite",
+        "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "storage_test",
+    srcs = ["store_test.go"],
+    embed = [":storage"],
+    deps = [
+        "//internal/config",
         "@org_uber_go_zap//:zap",
     ],
 )
