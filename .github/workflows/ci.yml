@@ -21,6 +21,10 @@ jobs:
         if: hashFiles('go.mod') != ''
         run: go install github.com/go-task/task/v3/cmd/task@latest
 
+      - name: Install golangci-lint
+        if: hashFiles('go.mod') != ''
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
       - name: Set up Bazelisk
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
         uses: bazelbuild/setup-bazelisk@v3
@@ -29,6 +33,10 @@ jobs:
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
         run: task bazel:build
 
+      - name: Bazel test (Task)
+        if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') != '' && hashFiles('**/BUILD', '**/BUILD.bazel') != ''
+        run: task bazel:test
+
       - name: No Bazel targets yet
         if: hashFiles('WORKSPACE', 'WORKSPACE.bazel', 'MODULE.bazel') == '' || hashFiles('**/BUILD', '**/BUILD.bazel') == ''
         run: echo "No Bazel workspace or BUILD files; skipping Bazel build."
@@ -36,6 +44,18 @@ jobs:
       - name: Wire check (Task)
         if: hashFiles('cmd/**/wire.go') != ''
         run: task wire:check
+
+      - name: Lint - go vet
+        if: hashFiles('go.mod') != ''
+        run: task go:vet
+
+      - name: Lint - golangci-lint
+        if: hashFiles('go.mod') != ''
+        run: task golangci:lint
+
+      - name: Lint - buf
+        if: hashFiles('buf.yaml') != ''
+        run: task buf:lint
 
       - name: No Go module yet
         if: hashFiles('go.mod') == ''
