@@ -7,7 +7,6 @@
 package main
 
 import (
-	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/daemon"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
