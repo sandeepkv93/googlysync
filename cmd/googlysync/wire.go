@@ -8,7 +8,6 @@ package main
 import (
 	"github.com/google/wire"
 
-	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/daemon"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
@@ -24,10 +23,10 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 		logging.NewLogger,
 		storage.NewStorage,
 		newStatusStore,
-		auth.NewService,
+		newAuthService,
 		fswatch.NewWatcher,
 		newSyncQueue,
-	syncer.NewEngine,
+		syncer.NewEngine,
 		ipc.NewServer,
 		daemon.NewDaemon,
 	)

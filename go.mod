@@ -6,18 +6,24 @@ toolchain go1.24.11
 
 require (
 	github.com/google/wire v0.7.0
+	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/zap v1.27.1
+	golang.org/x/oauth2 v0.24.0
 	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.35.2
 	modernc.org/sqlite v1.42.2
 )
 
 require (
+	al.essio.dev/pkg/shellescape v1.5.1 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/charmbracelet/x/ansi v0.1.4 // indirect
 	github.com/charmbracelet/x/input v0.1.0 // indirect
 	github.com/charmbracelet/x/term v0.1.1 // indirect
 	github.com/charmbracelet/x/windows v0.1.0 // indirect
+	github.com/danieljoos/wincred v1.2.2 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect

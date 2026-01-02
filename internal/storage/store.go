@@ -217,6 +217,17 @@ func (s *Storage) GetTokenRef(ctx context.Context, accountID string) (*TokenRef,
 	return &ref, nil
 }
 
+// DeleteTokenRef removes a token reference for an account.
+func (s *Storage) DeleteTokenRef(ctx context.Context, accountID string) error {
+	if accountID == "" {
+		return fmt.Errorf("token_ref account_id cannot be empty")
+	}
+	_, err := s.DB.ExecContext(ctx, `
+		DELETE FROM token_refs WHERE account_id = ?
+	`, accountID)
+	return err
+}
+
 // UpsertSyncState stores account sync metadata.
 func (s *Storage) UpsertSyncState(ctx context.Context, state *SyncState) error {
 	if state == nil {

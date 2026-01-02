@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	ipcgen "github.com/sandeepkv93/googlysync/internal/ipc/gen"
 	"github.com/sandeepkv93/googlysync/internal/status"
@@ -27,18 +28,20 @@ type Server struct {
 	logger *zap.Logger
 	ver    string
 	status *status.Store
+	auth   *auth.Service
 
 	grpcServer *grpc.Server
 	listener   net.Listener
 }
 
 // NewServer constructs a gRPC IPC server.
-func NewServer(cfg *config.Config, logger *zap.Logger, statusStore *status.Store) (*Server, error) {
+func NewServer(cfg *config.Config, logger *zap.Logger, statusStore *status.Store, authSvc *auth.Service) (*Server, error) {
 	return &Server{
 		cfg:    cfg,
 		logger: logger,
 		ver:    "dev",
 		status: statusStore,
+		auth:   authSvc,
 	}, nil
 }
 
@@ -137,7 +140,15 @@ func (s *Server) WatchStatus(_ *ipcgen.WatchStatusRequest, stream ipcgen.SyncSta
 // GetAuthState returns a stub auth state.
 func (s *Server) GetAuthState(ctx context.Context, _ *ipcgen.GetAuthStateRequest) (*ipcgen.GetAuthStateResponse, error) {
 	_ = ctx
-	return &ipcgen.GetAuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+	if s.auth == nil {
+		return &ipcgen.GetAuthStateResponse{SignedIn: false, RequestId: "req-0"}, nil
+	}
+	state := s.auth.State()
+	return &ipcgen.GetAuthStateResponse{
+		SignedIn:  state.SignedIn,
+		AccountId: state.Account.ID,
+		RequestId: "req-0",
+	}, nil
 }
 
 func toProtoStatus(snapshot status.Snapshot) *ipcgen.Status {

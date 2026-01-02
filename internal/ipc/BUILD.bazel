@@ -11,6 +11,7 @@ go_library(
     importpath = "github.com/sandeepkv93/googlysync/internal/ipc",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/auth",
         "//internal/config",
         "//internal/ipc/gen",
         "//internal/status",

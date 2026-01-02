@@ -12,22 +12,25 @@ const appDirName = "drive-client"
 
 // Config holds basic runtime configuration.
 type Config struct {
-	AppName            string
-	ConfigDir          string
-	DataDir            string
-	RuntimeDir         string
-	SocketPath         string
-	SyncRoot           string
-	IgnorePatterns     []string
-	EventLogSize       int
-	SyncQueueSize      int
-	LogLevel           string
-	DatabasePath       string
-	ConfigFile         string
-	LogFilePath        string
-	LogFileMaxMB       int
-	LogFileMaxBackups  int
-	LogFileMaxAgeDays  int
+	AppName           string
+	ConfigDir         string
+	DataDir           string
+	RuntimeDir        string
+	SocketPath        string
+	SyncRoot          string
+	IgnorePatterns    []string
+	EventLogSize      int
+	SyncQueueSize     int
+	LogLevel          string
+	DatabasePath      string
+	ConfigFile        string
+	LogFilePath       string
+	LogFileMaxMB      int
+	LogFileMaxBackups int
+	LogFileMaxAgeDays int
+	OAuthClientID     string
+	OAuthClientSecret string
+	OAuthRedirectHost string
 }
 
 // NewConfig builds a default config from XDG paths and environment.
@@ -83,6 +86,7 @@ func NewConfig() (*Config, error) {
 		LogFileMaxMB:      10,
 		LogFileMaxBackups: 5,
 		LogFileMaxAgeDays: 7,
+		OAuthRedirectHost: "127.0.0.1",
 	}, nil
 }
 
@@ -109,6 +113,9 @@ type fileConfig struct {
 	LogFileMaxMB      int      `json:"log_file_max_mb"`
 	LogFileMaxBackups int      `json:"log_file_max_backups"`
 	LogFileMaxAgeDays int      `json:"log_file_max_age_days"`
+	OAuthClientID     string   `json:"oauth_client_id"`
+	OAuthClientSecret string   `json:"oauth_client_secret"`
+	OAuthRedirectHost string   `json:"oauth_redirect_host"`
 }
 
 // NewConfigWithOptions resolves config and applies overrides from options and environment.
@@ -193,6 +200,15 @@ func applyConfigFile(cfg *Config, path string) error {
 	if fc.LogFileMaxAgeDays > 0 {
 		cfg.LogFileMaxAgeDays = fc.LogFileMaxAgeDays
 	}
+	if fc.OAuthClientID != "" {
+		cfg.OAuthClientID = fc.OAuthClientID
+	}
+	if fc.OAuthClientSecret != "" {
+		cfg.OAuthClientSecret = fc.OAuthClientSecret
+	}
+	if fc.OAuthRedirectHost != "" {
+		cfg.OAuthRedirectHost = fc.OAuthRedirectHost
+	}
 
 	return nil
 }
@@ -237,6 +253,15 @@ func applyEnv(cfg *Config) {
 		if i, err := strconv.Atoi(v); err == nil && i > 0 {
 			cfg.SyncQueueSize = i
 		}
+	}
+	if v := os.Getenv("GOOGLYSYNC_OAUTH_CLIENT_ID"); v != "" {
+		cfg.OAuthClientID = v
+	}
+	if v := os.Getenv("GOOGLYSYNC_OAUTH_CLIENT_SECRET"); v != "" {
+		cfg.OAuthClientSecret = v
+	}
+	if v := os.Getenv("GOOGLYSYNC_OAUTH_REDIRECT_HOST"); v != "" {
+		cfg.OAuthRedirectHost = v
 	}
 }
 

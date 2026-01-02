@@ -7,7 +7,6 @@
 package main
 
 import (
-	"github.com/sandeepkv93/googlysync/internal/auth"
 	"github.com/sandeepkv93/googlysync/internal/config"
 	"github.com/sandeepkv93/googlysync/internal/daemon"
 	"github.com/sandeepkv93/googlysync/internal/fswatch"
@@ -32,7 +31,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := auth.NewService(logger, storageStorage)
+	service, err := newAuthService(logger, configConfig, storageStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +45,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	server, err := ipc.NewServer(configConfig, logger, store)
+	server, err := ipc.NewServer(configConfig, logger, store, service)
 	if err != nil {
 		return nil, err
 	}
