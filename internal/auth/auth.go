@@ -3,11 +3,14 @@ package auth
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 
 	"github.com/zalando/go-keyring"
 
@@ -33,7 +36,7 @@ type Service struct {
 }
 
 // NewService constructs the auth service.
-func NewService(logger *zap.Logger, cfg *config.Config, store *storage.Storage) (*Service, error) {
+func NewService(ctx context.Context, logger *zap.Logger, cfg *config.Config, store *storage.Storage) (*Service, error) {
 	if logger == nil {
 		return nil, errors.New("auth: logger is required")
 	}
@@ -49,7 +52,7 @@ func NewService(logger *zap.Logger, cfg *config.Config, store *storage.Storage) 
 		krSvc = "googlysync"
 	}
 	svc := &Service{logger: logger, cfg: cfg, store: store, krSvc: krSvc}
-	svc.bootstrapState(context.Background())
+	svc.bootstrapState(ctx)
 	logger.Info("auth service initialized")
 	return svc, nil
 }
@@ -124,6 +127,47 @@ func (s *Service) SignIn(ctx context.Context, scopes []string) error {
 	return nil
 }
 
+// RefreshAccessToken exchanges the stored refresh token for a new access token.
+func (s *Service) RefreshAccessToken(ctx context.Context, accountID string) (*oauth2.Token, error) {
+	if accountID == "" {
+		return nil, errors.New("account id is required")
+	}
+	if s.cfg.OAuthClientID == "" || s.cfg.OAuthClientSecret == "" {
+		return nil, errors.New("oauth client not configured")
+	}
+
+	ref, err := s.store.GetTokenRef(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if ref == nil {
+		return nil, errors.New("no token reference found")
+	}
+
+	refreshToken, err := keyring.Get(s.krSvc, accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	oauthCfg := &oauth2.Config{
+		ClientID:     s.cfg.OAuthClientID,
+		ClientSecret: s.cfg.OAuthClientSecret,
+		Endpoint:     google.Endpoint,
+	}
+	tokenSource := oauthCfg.TokenSource(ctx, &oauth2.Token{RefreshToken: refreshToken})
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return nil, err
+	}
+
+	ref.Expiry = newToken.Expiry
+	ref.UpdatedAt = time.Now()
+	if err := s.store.UpsertTokenRef(ctx, ref); err != nil {
+		s.logger.Warn("token ref update failed", zap.Error(err))
+	}
+	return newToken, nil
+}
+
 // SignOut removes stored token reference and resets auth state.
 func (s *Service) SignOut(ctx context.Context, accountID string) error {
 	if accountID == "" {
@@ -148,36 +192,38 @@ func (s *Service) isFirstAccount(ctx context.Context) bool {
 }
 
 func (s *Service) bootstrapState(ctx context.Context) {
-	accounts, err := s.store.ListAccounts(ctx)
-	if err != nil || len(accounts) == 0 {
+	account := s.findActiveAccount(ctx)
+	if account == nil {
 		return
 	}
+	s.mu.Lock()
+	s.state = State{SignedIn: true, Account: *account}
+	s.mu.Unlock()
+}
 
-	var primary *storage.Account
-	var fallback *storage.Account
+func (s *Service) findActiveAccount(ctx context.Context) *storage.Account {
+	accounts, err := s.store.ListAccounts(ctx)
+	if err != nil || len(accounts) == 0 {
+		return nil
+	}
+
+	var candidates []storage.Account
 	for i := range accounts {
 		ref, err := s.store.GetTokenRef(ctx, accounts[i].ID)
 		if err != nil || ref == nil {
 			continue
 		}
-		if accounts[i].IsPrimary {
-			primary = &accounts[i]
-			break
+		candidates = append(candidates, accounts[i])
+	}
+	if len(candidates) == 0 {
+		return nil
+	}
+	for i := range candidates {
+		if candidates[i].IsPrimary {
+			return &candidates[i]
 		}
-		if fallback == nil {
-			fallback = &accounts[i]
-		}
 	}
-	if primary == nil {
-		primary = fallback
-	}
-	if primary == nil {
-		return
-	}
-
-	s.mu.Lock()
-	s.state = State{SignedIn: true, Account: *primary}
-	s.mu.Unlock()
+	return &candidates[0]
 }
 
 func scopeString(scopes []string) string {
@@ -199,5 +245,6 @@ func scopeString(scopes []string) string {
 	if len(unique) == 0 {
 		return ""
 	}
+	sort.Strings(unique)
 	return strings.Join(unique, " ")
 }

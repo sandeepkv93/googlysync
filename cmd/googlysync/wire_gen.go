@@ -32,7 +32,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	service, err := auth.NewService(logger, configConfig, storageStorage)
+	service, err := newAuthService(logger, configConfig, storageStorage)
 	if err != nil {
 		return nil, err
 	}

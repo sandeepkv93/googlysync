@@ -24,10 +24,10 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 		logging.NewLogger,
 		storage.NewStorage,
 		newStatusStore,
-		auth.NewService,
+		newAuthService,
 		fswatch.NewWatcher,
 		newSyncQueue,
-	syncer.NewEngine,
+		syncer.NewEngine,
 		ipc.NewServer,
 		daemon.NewDaemon,
 	)

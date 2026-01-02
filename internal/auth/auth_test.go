@@ -54,7 +54,7 @@ func TestNewServiceBootstrapsState(t *testing.T) {
 		t.Fatalf("UpsertTokenRef: %v", err)
 	}
 
-	svc, err := NewService(zap.NewNop(), &config.Config{}, store)
+	svc, err := NewService(ctx, zap.NewNop(), &config.Config{}, store)
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestBootstrapWithoutTokenRef(t *testing.T) {
 		t.Fatalf("UpsertAccount: %v", err)
 	}
 
-	svc, err := NewService(zap.NewNop(), &config.Config{}, store)
+	svc, err := NewService(ctx, zap.NewNop(), &config.Config{}, store)
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestBootstrapSelectsPrimaryWithToken(t *testing.T) {
 		t.Fatalf("UpsertTokenRef primary: %v", err)
 	}
 
-	svc, err := NewService(zap.NewNop(), &config.Config{}, store)
+	svc, err := NewService(ctx, zap.NewNop(), &config.Config{}, store)
 	if err != nil {
 		t.Fatalf("NewService: %v", err)
 	}
@@ -133,7 +133,7 @@ func TestBootstrapSelectsPrimaryWithToken(t *testing.T) {
 }
 
 func TestScopeStringDedupes(t *testing.T) {
-	got := scopeString([]string{"a", "b", "a", "", "b"})
+	got := scopeString([]string{"b", "a", "b", "", "a"})
 	if got != "a b" {
 		t.Fatalf("unexpected scope string: %q", got)
 	}
