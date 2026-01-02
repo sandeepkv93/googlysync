@@ -8,7 +8,7 @@ require (
 	github.com/google/wire v0.7.0
 	github.com/zalando/go-keyring v0.2.6
 	go.uber.org/zap v1.27.1
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.27.0
 	google.golang.org/grpc v1.66.2
 	google.golang.org/protobuf v1.35.2
 	modernc.org/sqlite v1.42.2
