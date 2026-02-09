@@ -9,6 +9,9 @@ go_library(
     importpath = "github.com/sandeepkv93/googlysync/internal/sync",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/auth",
+        "//internal/config",
+        "//internal/driveapi",
         "//internal/fswatch",
         "//internal/status",
         "//internal/storage",
