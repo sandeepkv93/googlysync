@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/sandeepkv93/googlysync/internal/auth"
@@ -19,6 +20,7 @@ import (
 
 // PendingUpload represents a file pending upload to Drive.
 type PendingUpload struct {
+	OpID      string // Pending operation ID for tracking
 	AccountID string
 	LocalPath string
 	DriveID   string // Empty for new files, set for updates
@@ -27,6 +29,7 @@ type PendingUpload struct {
 
 // PendingDownload represents a file pending download from Drive.
 type PendingDownload struct {
+	OpID      string // Pending operation ID for tracking
 	AccountID string
 	LocalPath string
 	Metadata  *driveapi.FileMetadata
@@ -201,7 +204,7 @@ func (e *Engine) PerformInitialSync(ctx context.Context, accountID string) error
 
 	// Check if initial sync already performed
 	syncState, err := e.Store.GetSyncState(ctx, accountID)
-	if err != nil && err != storage.ErrNotFound {
+	if err != nil {
 		return fmt.Errorf("get sync state: %w", err)
 	}
 	if syncState != nil && syncState.StartPageToken != "" {
@@ -234,12 +237,11 @@ func (e *Engine) PerformInitialSync(ctx context.Context, accountID string) error
 		if file.MimeType == "application/vnd.google-apps.folder" {
 			// Create folder entry
 			folder := &storage.Folder{
-				AccountID:    accountID,
-				DriveID:      file.ID,
-				Name:         file.Name,
-				Path:         e.buildLocalPath(accountID, file),
-				ModifiedTime: file.ModifiedTime,
-				CreatedAt:    time.Now(),
+				AccountID:  accountID,
+				DriveID:    file.ID,
+				Path:       e.buildLocalPath(accountID, file),
+				ModifiedAt: file.ModifiedTime,
+				CreatedAt:  time.Now(),
 			}
 			if err := e.Store.UpsertFolder(ctx, folder); err != nil {
 				e.Logger.Warn("failed to upsert folder",
@@ -252,12 +254,14 @@ func (e *Engine) PerformInitialSync(ctx context.Context, accountID string) error
 			localPath := e.buildLocalPath(accountID, file)
 
 			// Create pending operation
+			opID := uuid.New().String()
 			op := &storage.PendingOp{
+				ID:        opID,
 				AccountID: accountID,
 				DriveID:   file.ID,
-				Operation: "download",
-				LocalPath: localPath,
-				Status:    "pending",
+				OpType:    "download",
+				Path:      localPath,
+				State:     "pending",
 				CreatedAt: time.Now(),
 			}
 			if err := e.Store.AddPendingOp(ctx, op); err != nil {
@@ -270,6 +274,7 @@ func (e *Engine) PerformInitialSync(ctx context.Context, accountID string) error
 			// Add to download queue
 			select {
 			case e.downloadQueue <- &PendingDownload{
+				OpID:      opID,
 				AccountID: accountID,
 				LocalPath: localPath,
 				Metadata:  file,
@@ -291,9 +296,8 @@ func (e *Engine) PerformInitialSync(ctx context.Context, accountID string) error
 	newSyncState := &storage.SyncState{
 		AccountID:      accountID,
 		StartPageToken: startPageToken,
-		LastSyncTime:   time.Now(),
+		LastSyncAt:     time.Now(),
 		Paused:         false,
-		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
 	if err := e.Store.UpsertSyncState(ctx, newSyncState); err != nil {
@@ -335,7 +339,7 @@ func (e *Engine) handleLocalChange(ctx context.Context, evt fswatch.Event) {
 	default:
 		e.Logger.Debug("ignoring event: unsupported operation",
 			zap.String("path", evt.Path),
-			zap.String("op", evt.Op.String()))
+			zap.String("op", fswatch.OpString(evt.Op)))
 	}
 }
 
@@ -354,12 +358,14 @@ func (e *Engine) queueUpload(ctx context.Context, accountID, localPath string) {
 	}
 
 	// Create pending operation
+	opID := uuid.New().String()
 	op := &storage.PendingOp{
+		ID:        opID,
 		AccountID: accountID,
 		DriveID:   driveID,
-		Operation: "upload",
-		LocalPath: localPath,
-		Status:    "pending",
+		OpType:    "upload",
+		Path:      localPath,
+		State:     "pending",
 		CreatedAt: time.Now(),
 	}
 	if err := e.Store.AddPendingOp(ctx, op); err != nil {
@@ -372,6 +378,7 @@ func (e *Engine) queueUpload(ctx context.Context, accountID, localPath string) {
 	// Send to upload queue
 	select {
 	case e.uploadQueue <- &PendingUpload{
+		OpID:      opID,
 		AccountID: accountID,
 		LocalPath: localPath,
 		DriveID:   driveID,
@@ -404,9 +411,9 @@ func (e *Engine) queueDelete(ctx context.Context, accountID, localPath string) {
 	op := &storage.PendingOp{
 		AccountID: accountID,
 		DriveID:   file.DriveID,
-		Operation: "delete",
-		LocalPath: localPath,
-		Status:    "pending",
+		OpType:    "delete",
+		Path:      localPath,
+		State:     "pending",
 		CreatedAt: time.Now(),
 	}
 	if err := e.Store.AddPendingOp(ctx, op); err != nil {
@@ -478,7 +485,7 @@ func (e *Engine) processUpload(ctx context.Context, upload *PendingUpload) error
 	result, err := client.UploadFile(ctx, opts)
 	if err != nil {
 		// Update pending op with error
-		if updateErr := e.Store.UpdatePendingOp(ctx, upload.AccountID, upload.LocalPath, "failed", err.Error(), 0); updateErr != nil {
+		if updateErr := e.Store.UpdatePendingOp(ctx, upload.OpID, "failed", 1, err.Error()); updateErr != nil {
 			e.Logger.Error("failed to update pending op",
 				zap.String("path", upload.LocalPath),
 				zap.Error(updateErr))
@@ -487,17 +494,14 @@ func (e *Engine) processUpload(ctx context.Context, upload *PendingUpload) error
 	}
 
 	// Save file metadata to storage
-	file := &storage.File{
-		AccountID:    upload.AccountID,
-		DriveID:      result.File.ID,
-		Name:         result.File.Name,
-		Path:         upload.LocalPath,
-		MimeType:     result.File.MimeType,
-		Size:         result.File.Size,
-		MD5Checksum:  result.File.MD5Checksum,
-		ModifiedTime: result.File.ModifiedTime,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+	file := &storage.FileRecord{
+		AccountID:  upload.AccountID,
+		DriveID:    result.File.ID,
+		Path:       upload.LocalPath,
+		Checksum:   result.File.MD5Checksum,
+		Size:       result.File.Size,
+		ModifiedAt: result.File.ModifiedTime,
+		CreatedAt:  time.Now(),
 	}
 	if err := e.Store.UpsertFile(ctx, file); err != nil {
 		e.Logger.Error("failed to upsert file",
@@ -506,7 +510,7 @@ func (e *Engine) processUpload(ctx context.Context, upload *PendingUpload) error
 	}
 
 	// Delete pending operation
-	if err := e.Store.DeletePendingOp(ctx, upload.AccountID, upload.LocalPath); err != nil {
+	if err := e.Store.DeletePendingOp(ctx, upload.OpID); err != nil {
 		e.Logger.Error("failed to delete pending op",
 			zap.String("path", upload.LocalPath),
 			zap.Error(err))
@@ -697,9 +701,14 @@ func (e *Engine) queueDownload(ctx context.Context, accountID string, file *driv
 	}
 
 	// Create pending operation
+	opID := uuid.New().String()
 	op := &storage.PendingOp{
+		ID:        opID,
 		AccountID: accountID,
 		DriveID:   file.ID,
+		OpType:    "download",
+		Path:      localPath,
+		State:     "pending",
 		CreatedAt: time.Now(),
 	}
 	if err := e.Store.AddPendingOp(ctx, op); err != nil {
@@ -712,6 +721,7 @@ func (e *Engine) queueDownload(ctx context.Context, accountID string, file *driv
 	// Send to download queue
 	select {
 	case e.downloadQueue <- &PendingDownload{
+		OpID:      opID,
 		AccountID: accountID,
 		LocalPath: localPath,
 		Metadata:  file,
@@ -790,7 +800,7 @@ func (e *Engine) processDownload(ctx context.Context, download *PendingDownload)
 	result, err := client.DownloadFile(ctx, opts)
 	if err != nil {
 		// Update pending op with error
-		if updateErr := e.Store.UpdatePendingOp(ctx, download.AccountID, download.LocalPath, "failed", err.Error(), 0); updateErr != nil {
+		if updateErr := e.Store.UpdatePendingOp(ctx, download.OpID, "failed", 1, err.Error()); updateErr != nil {
 			e.Logger.Error("failed to update pending op",
 				zap.String("path", download.LocalPath),
 				zap.Error(updateErr))
@@ -799,17 +809,14 @@ func (e *Engine) processDownload(ctx context.Context, download *PendingDownload)
 	}
 
 	// Save file metadata to storage
-	file := &storage.File{
-		AccountID:    download.AccountID,
-		DriveID:      metadata.ID,
-		Name:         metadata.Name,
-		Path:         download.LocalPath,
-		MimeType:     metadata.MimeType,
-		Size:         metadata.Size,
-		MD5Checksum:  metadata.MD5Checksum,
-		ModifiedTime: metadata.ModifiedTime,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+	file := &storage.FileRecord{
+		AccountID:  download.AccountID,
+		DriveID:    metadata.ID,
+		Path:       download.LocalPath,
+		Checksum:   metadata.MD5Checksum,
+		Size:       metadata.Size,
+		ModifiedAt: metadata.ModifiedTime,
+		CreatedAt:  time.Now(),
 	}
 	if err := e.Store.UpsertFile(ctx, file); err != nil {
 		e.Logger.Error("failed to upsert file",
@@ -818,7 +825,7 @@ func (e *Engine) processDownload(ctx context.Context, download *PendingDownload)
 	}
 
 	// Delete pending operation
-	if err := e.Store.DeletePendingOp(ctx, download.AccountID, download.LocalPath); err != nil {
+	if err := e.Store.DeletePendingOp(ctx, download.OpID); err != nil {
 		e.Logger.Error("failed to delete pending op",
 			zap.String("path", download.LocalPath),
 			zap.Error(err))
@@ -861,7 +868,7 @@ func (e *Engine) detectConflict(ctx context.Context, accountID, localPath string
 	}
 
 	// Compare checksums - if same, no conflict
-	if trackedFile.MD5Checksum == remoteMeta.MD5Checksum {
+	if trackedFile.Checksum == remoteMeta.MD5Checksum {
 		return false, nil
 	}
 
