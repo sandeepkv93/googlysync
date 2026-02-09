@@ -386,9 +386,21 @@ func (e *Engine) queueUpload(ctx context.Context, accountID, localPath string) {
 	}:
 		e.Logger.Debug("upload queued", zap.String("path", localPath))
 	case <-ctx.Done():
+		// Clean up pending operation on context cancellation
 		e.Logger.Debug("upload queue cancelled", zap.String("path", localPath))
+		if delErr := e.Store.DeletePendingOp(ctx, opID); delErr != nil {
+			e.Logger.Error("failed to delete pending op on cancel",
+				zap.String("op_id", opID),
+				zap.Error(delErr))
+		}
 	default:
+		// Queue full - mark pending op as failed to prevent it from being stuck
 		e.Logger.Warn("upload queue full, dropping event", zap.String("path", localPath))
+		if updateErr := e.Store.UpdatePendingOp(ctx, opID, "failed", 0, "upload queue full"); updateErr != nil {
+			e.Logger.Error("failed to update pending op on queue full",
+				zap.String("op_id", opID),
+				zap.Error(updateErr))
+		}
 	}
 }
 
@@ -638,8 +650,8 @@ func (e *Engine) handleRemoteDelete(ctx context.Context, accountID, fileID strin
 	// TODO: Delete local file
 	// os.Remove(file.Path)
 
-	// Delete from storage
-	if err := e.Store.DeleteFile(ctx, accountID, fileID); err != nil {
+	// Delete from storage using path, not Drive ID
+	if err := e.Store.DeleteFile(ctx, accountID, file.Path); err != nil {
 		return fmt.Errorf("delete file from storage: %w", err)
 	}
 
@@ -728,9 +740,22 @@ func (e *Engine) queueDownload(ctx context.Context, accountID string, file *driv
 	}:
 		e.Logger.Debug("download queued", zap.String("path", localPath))
 	case <-ctx.Done():
+		// Clean up pending operation on context cancellation
+		if delErr := e.Store.DeletePendingOp(ctx, opID); delErr != nil {
+			e.Logger.Error("failed to delete pending op on cancel",
+				zap.String("op_id", opID),
+				zap.Error(delErr))
+		}
 		return ctx.Err()
 	default:
+		// Queue full - mark pending op as failed to prevent it from being stuck
 		e.Logger.Warn("download queue full, dropping event", zap.String("path", localPath))
+		if updateErr := e.Store.UpdatePendingOp(ctx, opID, "failed", 0, "download queue full"); updateErr != nil {
+			e.Logger.Error("failed to update pending op on queue full",
+				zap.String("op_id", opID),
+				zap.Error(updateErr))
+		}
+		return fmt.Errorf("download queue full")
 	}
 
 	return nil
