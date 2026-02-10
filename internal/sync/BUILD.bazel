@@ -9,9 +9,13 @@ go_library(
     importpath = "github.com/sandeepkv93/googlysync/internal/sync",
     visibility = ["//:__subpackages__"],
     deps = [
+        "//internal/auth",
+        "//internal/config",
+        "//internal/driveapi",
         "//internal/fswatch",
         "//internal/status",
         "//internal/storage",
+        "@com_github_google_uuid//:uuid",
         "@org_uber_go_zap//:zap",
     ],
 )

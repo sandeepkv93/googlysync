@@ -1,5 +1,4 @@
-load("@rules_go//go:def.bzl", "go_library")
-load("@rules_go//go:def.bzl", "go_test")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "auth",
@@ -12,9 +11,9 @@ go_library(
     deps = [
         "//internal/config",
         "//internal/storage",
-        "@com_github_zalando_go_keyring//:go_default_library",
-        "@org_golang_x_oauth2//:go_default_library",
-        "@org_golang_x_oauth2//google:go_default_library",
+        "@com_github_zalando_go_keyring//:go-keyring",
+        "@org_golang_x_oauth2//:oauth2",
+        "@org_golang_x_oauth2//google",
         "@org_uber_go_zap//:zap",
     ],
 )

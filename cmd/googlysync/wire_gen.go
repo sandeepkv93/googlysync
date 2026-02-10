@@ -37,7 +37,7 @@ func InitializeDaemon(opts config.Options) (*daemon.Daemon, error) {
 	}
 	store := newStatusStore(configConfig)
 	queue := newSyncQueue(logger, configConfig)
-	engine, err := sync.NewEngine(logger, storageStorage, store, queue)
+	engine, err := sync.NewEngine(logger, storageStorage, store, queue, service, configConfig)
 	if err != nil {
 		return nil, err
 	}
