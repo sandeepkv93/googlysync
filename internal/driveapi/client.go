@@ -3,7 +3,6 @@ package driveapi
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -136,7 +135,6 @@ func (c *Client) AccountID() string {
 // this type for documentation purposes.
 type RateLimiter struct {
 	limiter *rate.Limiter
-	mu      sync.Mutex
 }
 
 // NewRateLimiter creates a new rate limiter with the specified rate and burst.

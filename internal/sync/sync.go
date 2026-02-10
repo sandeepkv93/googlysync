@@ -126,11 +126,6 @@ func (e *Engine) Run(ctx context.Context) {
 	}
 }
 
-func (e *Engine) handleEvent(evt fswatch.Event) {
-	// Deprecated: use handleLocalChange instead
-	e.handleLocalChange(context.Background(), evt)
-}
-
 // getDriveClient returns a Drive API client for the given account.
 // If a client doesn't exist, it creates one using the auth service.
 func (e *Engine) getDriveClient(ctx context.Context, accountID string) (*driveapi.Client, error) {
@@ -169,32 +164,6 @@ func (e *Engine) getDriveClient(ctx context.Context, accountID string) (*driveap
 	e.Logger.Info("created drive client", zap.String("account_id", accountID))
 
 	return client, nil
-}
-
-// refreshDriveClient refreshes the token for an existing Drive client.
-func (e *Engine) refreshDriveClient(ctx context.Context, accountID string) error {
-	// Get fresh token from auth service
-	token, err := e.Auth.RefreshAccessToken(ctx, accountID)
-	if err != nil {
-		return fmt.Errorf("refresh access token: %w", err)
-	}
-
-	e.mu.RLock()
-	client, exists := e.driveClients[accountID]
-	e.mu.RUnlock()
-
-	if !exists {
-		return fmt.Errorf("drive client not found for account %s", accountID)
-	}
-
-	// Update client with new token
-	if err := driveapi.UpdateClient(ctx, client, token); err != nil {
-		return fmt.Errorf("update drive client: %w", err)
-	}
-
-	e.Logger.Debug("refreshed drive client", zap.String("account_id", accountID))
-
-	return nil
 }
 
 // PerformInitialSync performs a full sync of the Drive to local filesystem.
